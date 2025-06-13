@@ -1,12 +1,13 @@
 FROM python:3.10-slim
 
-# 🧰 Installation des outils réseau + certificats racines
+# 1️⃣ Ajout des certificats racine + outils réseau
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
+      ca-certificates \
       curl \
       iputils-ping \
-      dnsutils \
-      ca-certificates && \
+      dnsutils && \
+    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -16,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
 
-# Variables de version injectées
+# Variables de version injectées par Coolify
 ENV SOURCE_COMMIT=unknown
 ENV IMAGE_TAG=not-set
 ENV SCRAPERAPI_KEY=
