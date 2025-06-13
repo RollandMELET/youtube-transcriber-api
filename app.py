@@ -2,26 +2,52 @@ from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
+import os
 
 app = FastAPI()
 
+# Lecture des variables d’environnement
+SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
+GIT_COMMIT = os.getenv("SOURCE_COMMIT", "unknown")
+IMAGE_TAG = os.getenv("IMAGE_TAG", "not-set")
+
 def extract_video_id(url: str):
-    """Extrait le video ID depuis l'URL YouTube"""
     parsed_url = urlparse(url)
-    if parsed_url.hostname in ["youtu.be"]:
+    if parsed_url.hostname == "youtu.be":
         return parsed_url.path[1:]
     elif parsed_url.hostname in ["www.youtube.com", "youtube.com"]:
         return parse_qs(parsed_url.query).get("v", [None])[0]
     return None
 
 @app.get("/transcript")
-def get_transcript(url: str = Query(..., description="URL de la vidéo YouTube")):
+def get_transcript(url: str):
     video_id = extract_video_id(url)
     if not video_id:
         return JSONResponse(status_code=400, content={"error": "Invalid YouTube URL"})
 
+    if not SCRAPERAPI_KEY:
+        return JSONResponse(status_code=500, content={"error": "SCRAPERAPI_KEY is not configured"})
+
+    proxy_auth = f"http://scraperapi:{SCRAPERAPI_KEY}@proxy.scraperapi.com:8001"
+    proxies = {
+        "http": proxy_auth,
+        "https": proxy_auth
+    }
+
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies=proxies)
         return transcript
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        msg = str(e)
+        if "quota" in msg.lower() or "403" in msg or "blocked" in msg:
+            return JSONResponse(status_code=429, content={"error": "ScraperAPI quota exceeded or IP blocked"})
+        return JSONResponse(status_code=500, content={"error": msg})
+
+
+@app.get("/version")
+def version():
+    return {
+        "service": "youtube-transcriber-api",
+        "commit": GIT_COMMIT,
+        "image": IMAGE_TAG
+    }
