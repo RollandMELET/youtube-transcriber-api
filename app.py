@@ -1,10 +1,13 @@
 import os
 import certifi
+import ssl
 
-# https support via certifi
+# Forcer l'utilisation du bundle certifi
 os.environ['SSL_CERT_FILE'] = certifi.where()
 os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
 
+# Désactive la vérification TLS pour youtube-transcript-api
+ssl._create_default_https_context = ssl._create_unverified_context
 
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
