@@ -1,20 +1,36 @@
 import os
 import certifi
 import ssl
+import requests
 
-# Forcer l'utilisation du bundle certifi
+# 1️⃣ Forcer Requests & youtube-transcript-api à utiliser le bundle de certifi
 os.environ['SSL_CERT_FILE'] = certifi.where()
 os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
 
-# Désactive la vérification TLS pour youtube-transcript-api
+# 2️⃣ Désactiver la vérification SSL globale (urllib3)
 ssl._create_default_https_context = ssl._create_unverified_context
+requests.packages.urllib3.disable_warnings()  # supprime les InsecureRequestWarning
+
+# 3️⃣ Monkey-patch requests.get pour passer verify=False
+_orig_get = requests.get
+def _insecure_get(*args, **kwargs):
+    kwargs.setdefault('verify', False)
+    return _orig_get(*args, **kwargs)
+requests.get = _insecure_get
+
+# 4️⃣ Monkey-patch requests.Session.request également
+_orig_request = requests.Session.request
+def _insecure_request(self, method, url, **kwargs):
+    kwargs.setdefault('verify', False)
+    return _orig_request(self, method, url, **kwargs)
+requests.Session.request = _insecure_request
+
+# ————————————————————————————————————————————————————————————
 
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
-
-
 
 app = FastAPI()
 
@@ -40,7 +56,7 @@ def get_transcript(url: str):
     if not SCRAPERAPI_KEY:
         return JSONResponse(status_code=500, content={"error": "SCRAPERAPI_KEY is not configured"})
 
-    # Utilisation du bon host proxy
+    # Utilisation du proxy ScraperAPI
     proxy_auth = f"http://scraperapi:{SCRAPERAPI_KEY}@proxy-server.scraperapi.com:8001"
     proxies = {
         "http": proxy_auth,
