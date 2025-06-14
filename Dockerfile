@@ -17,9 +17,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir certifi
 
-# variables d'environnement SSL pour Python & Requests
+# Variables SSL pour Python & Requests
 ENV SSL_CERT_FILE=/usr/local/lib/python3.10/site-packages/certifi/cacert.pem
 ENV REQUESTS_CA_BUNDLE=/usr/local/lib/python3.10/site-packages/certifi/cacert.pem
+ENV PYTHONHTTPSVERIFY=0
 
 COPY app.py .
 
