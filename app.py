@@ -1,12 +1,17 @@
+import os
+import certifi
+
+# https support via certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+
+
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
-import os
-import certifi
 
-# ⚠️ Forcer l'utilisation du bundle de certificats de certifi
-os.environ['SSL_CERT_FILE'] = certifi.where()
+
 
 app = FastAPI()
 
