@@ -11,11 +11,11 @@ os.environ['SSL_CERT_FILE'] = certifi.where()
 app = FastAPI()
 
 # Lecture des variables d’environnement
-iSCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
+SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
 GIT_COMMIT = os.getenv("SOURCE_COMMIT", "unknown")
 IMAGE_TAG = os.getenv("IMAGE_TAG", "not-set")
 
- def extract_video_id(url: str):
+def extract_video_id(url: str):
     parsed_url = urlparse(url)
     if parsed_url.hostname == "youtu.be":
         return parsed_url.path[1:]
@@ -32,7 +32,8 @@ def get_transcript(url: str):
     if not SCRAPERAPI_KEY:
         return JSONResponse(status_code=500, content={"error": "SCRAPERAPI_KEY is not configured"})
 
-    # Utilisation du bon host proxy\    proxy_auth = f"http://scraperapi:{SCRAPERAPI_KEY}@proxy-server.scraperapi.com:8001"
+    # Utilisation du bon host proxy
+    proxy_auth = f"http://scraperapi:{SCRAPERAPI_KEY}@proxy-server.scraperapi.com:8001"
     proxies = {
         "http": proxy_auth,
         "https": proxy_auth
